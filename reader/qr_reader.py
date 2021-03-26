@@ -11,7 +11,7 @@ import os
 from pyzbar import pyzbar
 import time
 from db import Database
-
+from playsound import playsound
 
 class qr_read:
     def __init__(self, vs):
@@ -28,6 +28,7 @@ class qr_read:
         self.panel = None
         
         self.root.geometry('1500x600')
+        self.barcodes = None
 
         # qr_text = tki.StringVar()
         # qr_label = tki.Label(self.root , textvariable=qr_text)
@@ -36,9 +37,12 @@ class qr_read:
         # self.qr_label = qr_label
         # self.qr_text = qr_text
 
-        qr_details = tki.Listbox(self.root ,height=20, width=60,border=1,font=('raleway'),fg='green')
+        qr_details = tki.Listbox(self.root ,height=18, width=55,font=('raleway'),fg='green',bg="#eee")
+
         qr_details.grid(row=0,column=1,pady=20,padx=20)
+
         self.qr_details = qr_details
+        self.code_visible = None
 
 
         # w = tki.Label( self.root,text='...',font=('helvetica',24),fg='green',width=10,height=10)
@@ -48,58 +52,69 @@ class qr_read:
         # the most recently read frame
         self.stopEvent = threading.Event()
         self.thread = threading.Thread(target=self.videoLoop, args=())
+        # self.b_thread = threading.Thread(target=self.beep_thread, args=())
         self.thread.start()
+        # self.b_thread.start()
         # set a callback to handle when the window is closed
         self.root.wm_title("QR_read")
         self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
 
-    def videoLoop(self):
 
+    def videoLoop(self):
         try:
             # keep looping over frames until we are instructed to stop
-            while not self.stopEvent.is_set():
-                # grab the frame from the video stream and resize
-                self.frame = self.vs.read()
-                self.frame = imutils.resize(self.frame, width=600)
-                # OpenCV represents images in BGR order; however PIL
-                # represents images in RGB order, so we need to swap
-                # the channels, then convert to PIL and ImageTk format later
 
-                # Decode the qr codes
+            last_code = None
+            while not self.stopEvent.is_set():
+
+                # Grab the frame from the video stream and resize
+                # print('code visible ',self.code_visible)
+                self.frame = self.vs.read()
+                self.frame = imutils.resize(self.frame, width=700)
+
+                # Try decoding every frame 
                 barcodes = pyzbar.decode(self.frame)
+                # The last scanned code to avoid dupes 
 
                 if barcodes:
-                    # print("detecting code ")
+                    # Scope : barcode has been detected 
+
                     # Loop through all decoded barcodes from the frame
+                    # and display a bounding box on the video stream 
+                    self.code_visible = True
+
                     for code in barcodes:
 
                         (x, y, w, h) = code.rect
                         barcodeData = code.data.decode("utf-8")
                         barcodeType = code.type
-                        cv2.rectangle(self.frame, (x, y),
-                                    (x + w, y + h), (10, 255, 10), 3)
-
+                        cv2.rectangle(self.frame, (x, y),(x + w, y + h), (10, 255, 10), 3)
                         text = "{} ({})".format(barcodeData, barcodeType)
-                        cv2.putText(self.frame, text, (x, y - 10),
-                                    cv2.FONT_HERSHEY_DUPLEX, 0.5, (135, 72, 32), 1)
+                        cv2.putText(self.frame, text, (x, y - 10),cv2.FONT_HERSHEY_DUPLEX, 0.5, (135, 72, 32), 1)
+                        if last_code is None :
+                            print('\n First scan since execution ')
+                            last_code = barcodeData
+                            self.qr_details.delete(0,tki.END)
+                            self.qr_details.insert(tki.END,barcodeData)
+                            playsound('./waves/555061__magnuswaker__repeatable-beep.wav')
 
-                        self.qr_details.delete(0,tki.END)
-                        self.qr_details.insert(tki.END,barcodeData)
-                        db = Database('userdata.db')
-                        
-                        status = db.update_date('2052af8392437796097542a9d10dad1b')
-                        print(status)
-                        if not status:
-                            print(" * Duplicate entry alarm sounds *")
-                        
-                        # print('lock on code ')
-                        self.qr_details.insert(tki.END,'looking in db ')
+                        if barcodeData != last_code :
+                            last_code = barcodeData
+                            print(" \t New Code Detected ")
+                            print(' Setting the last scanned value to the current code ')
+                            self.qr_details.delete(0,tki.END)
+                            self.qr_details.insert(tki.END,barcodeData)
+                            playsound('./waves/555061__magnuswaker__repeatable-beep.wav')
+                            db = Database('userdata.db')
+                            print(db.update_date(barcodeData))
 
+                        # self.qr_details.insert(tki.END,barcodeData)
+                        # print(text)
+                        # playsound('./waves/555061__magnuswaker__repeatable-beep.wav')
                 else:
-                    # print("no code  ")
-
-                    self.qr_details.delete(0,tki.END)
-
+                    # Scope : there is no code on the screen
+                    self.code_visible = False
+                    pass 
 
                 image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
                 image = Image.fromarray(image)
@@ -110,14 +125,15 @@ class qr_read:
                     self.panel = tki.Label(image=image)
                     self.panel.image = image
                     self.panel.grid(row=0,column=0, padx=(20, 20), pady=20)
-
                 # otherwise, update the panel
                 else:
                     self.panel.configure(image=image)
                     self.panel.image = image
 
         except RuntimeError as e:
-            print("[INFO] RuntimeError caught ")
+            print(f"[INFO] RuntimeError caught :{e}")
+
+
 
     def onClose(self):
         # set the stop event, cleanup the camera, and allow the rest of
