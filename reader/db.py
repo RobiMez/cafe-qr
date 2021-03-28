@@ -57,46 +57,58 @@ class Database:
 
         self.cur.execute("SELECT * FROM users WHERE hui = ? ",(hui,))
         data = self.cur.fetchall()
+        print('im here ',data)
         # print(f'Update invoked\n\tUser : {data[0][1]} {data[0][2]}\n')
         self.cur.execute("SELECT dates_eaten FROM users WHERE hui = ? ",(hui,))
         data = self.cur.fetchall()
+        if data:
+            print('data exissts')
 
-        # The time last scanned is the query return from the hui 
-        time_last_scanned = data[0][0]
-        timenow = time.time()
-        # The difference in time between last scanned and current time 
-        time_difference  = timenow - time_last_scanned 
-        tdiff_secs = round(time_difference,2)
-        tdiff_min = round(time_difference/60,2)
-        tdiff_hrs = round(time_difference/360,2)
-        tdiff_hrs = round(time_difference/360,2)
-        tdiff_dys = round(time_difference/8640,2)
+            # The time last scanned is the query return from the hui 
+            time_last_scanned = data[0][0]
+            timenow = time.time()
+            # The difference in time between last scanned and current time 
+            time_difference  = timenow - time_last_scanned 
+            tdiff_secs = round(time_difference,2)
+            tdiff_min = round(time_difference/60,2)
+            tdiff_hrs = round(time_difference/360,2)
+            tdiff_hrs = round(time_difference/360,2)
+            tdiff_dys = round(time_difference/8640,2)
 
-        # print('Time since last scan : ')
-        # print('\t',tdiff_secs, 'Seconds')
-        # print('\t',tdiff_min,  'Minutes')
-        # print('\t',tdiff_hrs , 'Hours')
-        # print('\t',tdiff_dys , 'Days\n')
+            # print('Time since last scan : ')
+            # print('\t',tdiff_secs, 'Seconds')
+            # print('\t',tdiff_min,  'Minutes')
+            # print('\t',tdiff_hrs , 'Hours')
+            # print('\t',tdiff_dys , 'Days\n')
 
-        if tdiff_min > 2:
-            # if the time between scans is above 2 minutes , user is sus 
-            # register the scan but also sound the alarm 
-            self.cur.execute("UPDATE users SET dates_eaten = ? WHERE hui = ? ", (timenow,hui))
-            self.conn.commit()
-            print('[ Error ] - Duplicate entry attempt ')
-            return False
-            # Sound da alarms 
+            if tdiff_secs > 10:
+                # if the time between scans is above 2 minutes , user is sus 
+                # register the scan but also sound the alarm 
+                self.cur.execute("UPDATE users SET dates_eaten = ? WHERE hui = ? ", (timenow,hui))
+                self.conn.commit()
+                print('[ Error ] - Duplicate entry attempt ')
+                return "dupe entry"
+                # Sound da alarms 
 
-        elif time_difference/360 > 2.1 :
-            # valid if the difference in scan times is above 2 hours and a bit more  
-            pass
-        else : 
-        # if the time between scans is below 2 minutes , the user may just be stupid so allow it 
-            pass
+            elif time_difference/360 > 2.1 :
+                # valid if the difference in scan times is above 2 hours and a bit more  
+                self.cur.execute("UPDATE users SET dates_eaten = ? WHERE hui = ? ", (timenow,hui))
+                self.conn.commit()
+                pass
+            else : 
+                self.cur.execute("UPDATE users SET dates_eaten = ? WHERE hui = ? ", (timenow,hui))
+                self.conn.commit()
+            # if the time between scans is below 2 minutes , the user may just be stupid so allow it 
+                pass
 
-        self.cur.execute("UPDATE users SET dates_eaten = ? WHERE hui = ? ", (timenow,hui))
-        self.conn.commit()
-        return True
+            self.cur.execute("SELECT * FROM users WHERE hui = ? ",(hui,))
+            data = self.cur.fetchall()
+            return data
+
+        else: 
+            print('no data found')
+            return 'not valid code'
+        
 
     def __del__(self):
         self.conn.close()

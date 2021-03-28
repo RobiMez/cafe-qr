@@ -15,7 +15,7 @@ from playsound import playsound
 
 class qr_read:
     def __init__(self, vs):
-        # store the video stream object and output path, then initialize
+        # store the video stream object, then initialize
         # the most recently read frame, thread for reading frames, and
         # the thread stop event
         self.vs = vs
@@ -29,6 +29,7 @@ class qr_read:
         
         self.root.geometry('1500x600')
         self.barcodes = None
+
 
         # qr_text = tki.StringVar()
         # qr_label = tki.Label(self.root , textvariable=qr_text)
@@ -58,13 +59,16 @@ class qr_read:
         # set a callback to handle when the window is closed
         self.root.wm_title("QR_read")
         self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
-
+        exit_btn = tki.Button(self.root, text = "Exit program",command = self.root.quit, fg='red')
+        exit_btn.grid(row=1,column=1,padx=20)
 
     def videoLoop(self):
         try:
             # keep looping over frames until we are instructed to stop
 
             last_code = None
+
+            self.time_last_scanned = time.time()
             while not self.stopEvent.is_set():
 
                 # Grab the frame from the video stream and resize
@@ -91,23 +95,39 @@ class qr_read:
                         cv2.rectangle(self.frame, (x, y),(x + w, y + h), (10, 255, 10), 3)
                         text = "{} ({})".format(barcodeData, barcodeType)
                         cv2.putText(self.frame, text, (x, y - 10),cv2.FONT_HERSHEY_DUPLEX, 0.5, (135, 72, 32), 1)
-                        if last_code is None :
-                            print('\n First scan since execution ')
-                            last_code = barcodeData
-                            self.qr_details.delete(0,tki.END)
-                            self.qr_details.insert(tki.END,barcodeData)
-                            playsound('./waves/555061__magnuswaker__repeatable-beep.wav')
+                        
+                        info_string = f" Barcode data : {barcodeData}"
+                        # If this is the first code to be scanned or if there is a new code on the frame 
 
-                        if barcodeData != last_code :
+                        if last_code is None or barcodeData != last_code :
                             last_code = barcodeData
-                            print(" \t New Code Detected ")
-                            print(' Setting the last scanned value to the current code ')
-                            self.qr_details.delete(0,tki.END)
-                            self.qr_details.insert(tki.END,barcodeData)
-                            playsound('./waves/555061__magnuswaker__repeatable-beep.wav')
                             db = Database('userdata.db')
-                            print(db.update_date(barcodeData))
+                            database_return = db.update_date(barcodeData)
 
+                            # print(db.update_date(barcodeData))
+                            # info_string = info_string + str(db.update_date(barcodeData))
+                            self.qr_details.delete(0,tki.END)
+                            self.qr_details.insert(tki.END,info_string)
+                            print('\n ------ ',database_return, database_return == "not valid code")
+                            if database_return == 'not valid code':
+                                self.qr_details.insert(tki.END,'bad read ')
+                                
+                            elif database_return == 'dupe entry':
+                                for s in range(9):
+                                    playsound('./waves/202530__kalisemorrison__scanner-beep.wav')
+
+                            else : 
+                                for data in database_return[0]:
+                                    print(data,'\n')
+                                    self.qr_details.insert(tki.END,data)
+                                playsound('./waves/555061__magnuswaker__repeatable-beep.wav')
+                            self.time_last_scanned = time.time()
+                            
+
+                        print(self.time_last_scanned - time.time())
+
+                        # cleaer the info board after 10 seconds 
+                            # last_code = None
                         # self.qr_details.insert(tki.END,barcodeData)
                         # print(text)
                         # playsound('./waves/555061__magnuswaker__repeatable-beep.wav')
@@ -115,6 +135,9 @@ class qr_read:
                     # Scope : there is no code on the screen
                     self.code_visible = False
                     pass 
+
+                    if time.time() - self.time_last_scanned > 10 :
+                        self.qr_details.delete(0,tki.END)
 
                 image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
                 image = Image.fromarray(image)
