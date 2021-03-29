@@ -38,7 +38,7 @@ class qr_read:
         # self.qr_label = qr_label
         # self.qr_text = qr_text
 
-        qr_details = tki.Listbox(self.root ,height=18, width=55,font=('raleway'),fg='green',bg="#eee")
+        qr_details = tki.Listbox(self.root ,height=18, width=55,font=('raleway'),fg='#111',bg="#eee")
 
         qr_details.grid(row=0,column=1,pady=20,padx=20)
 
@@ -107,19 +107,25 @@ class qr_read:
                             # print(db.update_date(barcodeData))
                             # info_string = info_string + str(db.update_date(barcodeData))
                             self.qr_details.delete(0,tki.END)
-                            self.qr_details.insert(tki.END,info_string)
-                            print('\n ------ ',database_return, database_return == "not valid code")
+                            # self.qr_details.insert(tki.END,info_string)
+                            print('\n ------ ',database_return)
                             if database_return == 'not valid code':
-                                self.qr_details.insert(tki.END,'bad read ')
+                                self.qr_details.insert(tki.END,'    BAD READ')
+                                self.qr_details.insert(tki.END,'    Try again ')
                                 
-                            elif database_return == 'dupe entry':
-                                for s in range(9):
+                            elif database_return[0] == 'dupe entry':
+                                print(database_return)
+                                self.qr_details.insert(tki.END,'ERROR: Duplicate entry attempt ')
+                                for data in database_return[1][0]:
+                                    print(f"   {data} ",'\n')
+                                    self.qr_details.insert(tki.END,f'User --- {data}')
+                                for s in range(10):
                                     playsound('./waves/202530__kalisemorrison__scanner-beep.wav')
 
                             else : 
                                 for data in database_return[0]:
-                                    print(data,'\n')
-                                    self.qr_details.insert(tki.END,data)
+                                    print(f"   {data} ",'\n')
+                                    self.qr_details.insert(tki.END,f"   {data} ")
                                 playsound('./waves/555061__magnuswaker__repeatable-beep.wav')
                             self.time_last_scanned = time.time()
                             
