@@ -83,7 +83,7 @@ class Database:
             # print('\t',tdiff_hrs , 'Hours')
             # print('\t',tdiff_dys , 'Days\n')
 
-            if tdiff_secs > 10:
+            if tdiff_secs > 13:
                 
                 # if the time between scans is above 2 minutes , user is sus 
                 # register the scan but also sound the alarm 
@@ -121,9 +121,4 @@ class Database:
 
 db = Database('userdata.db')
 
-# db.insert_one('ribka','solomon','gur/00000/12','female','engeneering','student','2nd year','')
 db.fetch_all()
-
-# db.update_date('2052af8392437796097542a9d10dad1b')
-
-# db.fetch_all()
