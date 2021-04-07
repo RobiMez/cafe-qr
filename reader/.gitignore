@@ -1,6 +1,6 @@
 
 
-
+*.db
 ### Django ###
 *.log
 *.pot
