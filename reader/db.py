@@ -7,11 +7,6 @@ def encode_uid(uid):
     encoded = hashlib.md5(str(uid).encode('utf-8'))
     return encoded.hexdigest()
 
-
-con = sqlite3.connect('./logs.db')
-cur = con.cursor()
-
-
 class Database:
     def __init__(self, db):
         self.conn = sqlite3.connect(db)
@@ -23,8 +18,8 @@ class Database:
             uid text,
             gender text,
             enrollment text,
-            access text,
             term text,
+            access text,
             dates_eaten list)""")
         self.conn.commit()
 
@@ -36,9 +31,48 @@ class Database:
 
     def insert_one(self,f_name, l_name, uid, gender, enrollment, access, term, dates_eaten):
         print("[ insert ] - Adding a new user.")
-        data = f"{f_name} {l_name} {uid} {gender} {enrollment} {access} {term}"
+        # perfofrm sanitization 
+        error = ""
+        if f_name == '':
+            print("No first name detected ")
+            error = "f_name_none"
+            return error
+        elif l_name == '':
+            print("No last name detected ")
+            error = "l_name_none"
+            return error
+        elif uid == '':
+            print("No University id detected ")
+            error = "uid_none"
+            return error
+        elif gender == None or gender == 'None':
+            print("No gender detected ")
+            error = "gender_none"
+            return error
+        elif enrollment == '':
+            print("No Enrollment detected ")
+            error = "enrollment_none"
+            return error
+        elif access == '':
+            print("No Access level detected ")
+            error = "access_none"
+            return error
+        elif term == '':
+            print("No Term detected ")
+            error = "term_none"
+            return error
+        
+        data = f"{f_name} {l_name} {uid} {gender} {enrollment} {term} {access}"
         print(data)
         hui = encode_uid(data)
+        self.cur.execute("SELECT * FROM users WHERE hui = ? ",(hui,))
+        data_fetched = self.cur.fetchall()
+        print(data_fetched)
+        if data_fetched != []:
+            print("this user already exists")
+            error = 'user_exists'
+            return error
+
         print(hui)
         h = hui
         f = f_name
@@ -49,8 +83,8 @@ class Database:
         a = access
         t = term
         d = dates_eaten
-
-        self.cur.execute(f"INSERT INTO users VALUES ('{h}','{f}','{l}','{u}','{g}','{e}','{a}','{t}','{d}')")
+        print('Executing sql')
+        self.cur.execute(f"INSERT INTO users VALUES ('{h}','{f}','{l}','{u}','{g}','{e}','{t}','{a}','{d}')")
         self.conn.commit()
         return hui
 
@@ -114,7 +148,21 @@ class Database:
             print('no data found')
             return 'not valid code'
         
-
+    def remove_one(self,hui):
+        self.cur.execute("DELETE FROM users WHERE hui = ? ",(hui,))
+        self.conn.commit()
+        data = self.cur.fetchall()
+        return data
+        pass
+    
+        
+    # def update_one(self,hui):
+    #     self.cur.execute("UPDATE users SET  WHERE hui = ? ",(hui,))
+    #         self.conn.commit()
+    #     data = self.cur.fetchall()
+    #     return data
+    #     pass
+    
     def __del__(self):
         self.conn.close()
 
