@@ -282,8 +282,7 @@ class generator():
             
 
         self.data = self.db.insert_one(fname_entry_data,lname_entry_data,uid_entry_data,gender_entry_data,enrollment_entry_data,access_entry_data,term_entry_data,time.time(),'True')
-        fill_color  = '#000000'
-        background = '#ffffff'
+
         if self.data.split('_')[-1] == 'exists':
             # it there is already a user
             print("[ Error ] - User exists ")

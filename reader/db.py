@@ -167,9 +167,96 @@ class Database:
         self.conn.commit()
         data = self.cur.fetchall()
         return data
-        pass
-    
-    
+
+
+    def update_one(self,hui,f_name, l_name, uid, gender, enrollment, access, term,):
+        print(f"[ Update ] - Updating user : {hui}")
+        # Get user context 
+        self.cur.execute("SELECT * FROM users WHERE hui = ? ",(hui,))
+        data = self.cur.fetchall()
+        print('Old user Data : ',data)
+        
+        # Preform sanitization 
+        error = ""
+        if f_name == '':
+            print("No first name detected ")
+            error = "f_name_none"
+            return error
+        elif l_name == '':
+            print("No last name detected ")
+            error = "l_name_none"
+            return error
+        elif uid == '':
+            print("No University id detected ")
+            error = "uid_none"
+            return error
+        elif gender == None or gender == 'None':
+            print("No gender detected ")
+            error = "gender_none"
+            return error
+        elif enrollment == '':
+            print("No Enrollment detected ")
+            error = "enrollment_none"
+            return error
+        elif access == '':
+            print("No Access level detected ")
+            error = "access_none"
+            return error
+        elif term == '':
+            print("No Term detected ")
+            error = "term_none"
+            return error
+        
+        data = f"{f_name} {l_name} {uid} {gender} {enrollment} {term} {access}"
+        print(data)
+        n_hui = encode_uid(data)
+        print(f"old hui : {hui}")
+        print(f"new hui : {n_hui} ")
+        print('Executing sql')
+        self.cur.execute("""
+                        UPDATE users SET 
+                        
+                        hui = :n_hui ,
+                        f_name = :f_name,
+                        l_name = :l_name,
+                        gender = :gender,
+                        enrollment = :enrollment,
+                        term = :term,
+                        access = :access,
+                        printed = '0'
+                        
+                        WHERE hui = :hui""",
+                        
+                        {    
+                            "n_hui": n_hui
+                            ,"f_name": f_name
+                            ,"l_name": l_name
+                            ,"gender": gender
+                            ,"enrollment": enrollment
+                            ,"term": term
+                            ,"access": access
+                            ,"hui": hui
+                            
+                        })
+        
+        
+        
+        
+        
+        
+        
+        # self.cur.execute("UPDATE users SET hui = ? WHERE hui = ? ",(n_hui,hui,))
+        # self.cur.execute("UPDATE users SET f_name = ? WHERE hui = ? ",(f_name,hui,))
+        # self.cur.execute("UPDATE users SET l_name = ? WHERE hui = ? ",(l_name,hui,))
+        # self.cur.execute("UPDATE users SET gender = ? WHERE hui = ? ",(gender,hui,))
+        # self.cur.execute("UPDATE users SET uid = ? WHERE hui = ? ",(uid,hui,))
+        # self.cur.execute("UPDATE users SET enrollment = ? WHERE hui = ? ",(enrollment,hui,))
+        # self.cur.execute("UPDATE users SET access = ? WHERE hui = ? ",(access,hui,))
+        # self.cur.execute("UPDATE users SET term = ? WHERE hui = ? ",(term,hui,))
+        # self.cur.execute("UPDATE users SET printed = ? WHERE hui = ? ",('0',hui,))
+        self.conn.commit()
+        return n_hui
+
     def __del__(self):
         self.conn.close()
 

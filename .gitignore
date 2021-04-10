@@ -14,3 +14,7 @@ dist
 cafe_qr.spec
 *.db
 reader/userdata.db
+reader/4.png
+reader/1.png
+reader/2.png
+reader/3.png

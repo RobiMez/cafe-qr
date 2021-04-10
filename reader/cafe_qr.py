@@ -56,8 +56,27 @@ class generator():
 
         return canvas, a4,base
 
-    def generate_qr(self):
-        pass
+
+    def generate_qr(self,data,main_color,bg_color,qr_ver,padd,box_sixe):
+        # generate a single qr and return image object 
+        qr = qrcode.QRCode(
+            version=qr_ver,
+            error_correction = qrcode.constants.ERROR_CORRECT_Q,
+            box_size=box_sixe,
+            border=padd,
+        )
+        
+        qr.add_data(data)
+        qr.make(fit=True)
+        return qr.make_image(fill_color=main_color, back_color=bg_color)
+
+    def generate_single_code(self,hui):
+        
+        fill_color  = '#000000'
+        background = '#ffffff'
+        qr_code = self.generate_qr(hui,fill_color,background,2,1,20)
+        return qr_code
+
 
     def draw_grids(self, canvas):
         print('- draw grid system  -')
@@ -211,7 +230,7 @@ class administration():
         add_button      = Button(button_frame,text='Add Student ', command = self.add_user)
         remove_button   = Button(button_frame,text='Remove Selected', command = self.remove_selected)
         refresh_button  = Button(button_frame,text='Refresh views', command = self.render_db_view)
-        update_button   = Button(button_frame,text='Update student', command = self.update_print)
+        update_button   = Button(button_frame,text='Update student', command = self.update_user)
         clear_button    = Button(button_frame,text='Clear inputs ', command = self.clear_input)
         exit_button     = Button(button_frame,text='Exit program',fg="#ff1122", command = root.quit)
         # -------------------------------------------------------
@@ -294,12 +313,25 @@ class administration():
             self.db_view.delete(selection)
             self.render_db_view()
 
-    def update_print(self):
+    def update_user(self):
         selected = self.db_view.selection()
         data = ''
-        for selection in selected:
-            values = self.db_view.item(selection,'values')
-            self.db.update_print_state(values[0],data)
+        print(f"[ Update button ] - Selected :{selected}")
+        if len(selected) == 1:
+            for selection in selected:
+                values = self.db_view.item(selection,'values')
+                print(f"[ Update button ] - values {values}")
+                fname_entry_data = self.fname_entry.get().capitalize()
+                lname_entry_data = self.lname_entry.get().capitalize()
+                gender_entry_data = self.sex.get()
+                uid_entry_data = self.uid_entry.get()
+                enrollment_entry_data = self.enrollment_entry.get()
+                term_entry_data = self.selected_dropdown.get()
+                access_entry_data = self.access_entry.get()
+                retun = self.db.update_one(values[0],fname_entry_data,lname_entry_data,uid_entry_data,gender_entry_data,enrollment_entry_data,access_entry_data,term_entry_data)
+                print("return value of query : ",retun)
+                self.render_db_view()
+
 
     def select_data(self):
         selected = self.db_view.selection()
@@ -571,14 +603,9 @@ class print_interface():
             entry = (dbreturn[0][1],dbreturn[0][2],dbreturn[0][3],dbreturn[0][4],dbreturn[0][5],dbreturn[0][6],dbreturn[0][7])
             to_print.append(entry)
         print("toprint",to_print)
-        userdata = [("Dawit","Solomon","GUR/00000/12","Male","Engeneering","2nd year","Student",),
-                    ("Tony","Doe","GUR/00010/12","Male","Construction","2nd year","Student",),
-                    ("Deez","Ligma","GUR/01000/12","Male","Arcture","2nd year","Student",),
-                    ("Gebresolomon","Hailemichael","GUR/07000/12","Male","Design","2nd year","Student",),
-                    ]
         
-        gen = generator()
-        a4_canvas = gen.gen_a4px()
+        self.gen = generator()
+        a4_canvas = self.gen.gen_a4px()
         canvas = a4_canvas[0]
         a4 = a4_canvas[1]
         base = a4_canvas[2]
@@ -587,13 +614,51 @@ class print_interface():
                         [(183, 2011), (1057, 3251)], 
                         [(1423, 2011), (2297, 3251)]]
         # draw sequence : 
-        gen.draw_major_coords(canvas)
-        gen.paste_badge_background(a4,badge_coords)
-        gen.write_data(canvas, badge_coords, to_print)
-        gen.save_a4(a4,base,'owo')
+        self.gen.draw_major_coords(canvas)
+        self.gen.paste_badge_background(a4,badge_coords)
+        self.gen.write_data(canvas, badge_coords, to_print)
+
+
+        self.paste_qr(a4,badge_coords)
+        namestr = ''
+        for item in to_print:
+            splitd = item[2].split('/')
+            namestr = namestr + '_'+ splitd[1]
+        self.gen.save_a4(a4,base,f'{namestr}')
+        self.set_printed()
 
         pass
+    def paste_qr(self,canvas,coords):
+        # uses single gen to paste images onto the whole 
+        print("coords: ",coords)
+        print("canvas: ",canvas)
+        # for the 4 thingies 
+        # generate code 
+        # paste into a4 canvas 
+        j = 0
+        
+        selected = self.db_view.selection()
+        for selection in selected:
+            values = self.db_view.item(selection,'values')
+            dbreturn = self.db.fetch_one(values[0])
 
+
+            print('pasting qr code ')
+            print('pasting photo')
+            code = self.gen.generate_single_code(dbreturn[0][0])
+            code = code.resize((530,530))
+            canvas.paste(code,(coords[j][0][0]+172,coords[j][0][1]+90))
+            
+            
+            j = j + 1
+
+
+            code.save(f"{j}.png")
+            print("code",code)
+            
+            print("saved qr image ")
+        pass
+    
     def generate_qr(self,data,main_color,bg_color,qr_ver,padd,box_sixe):
         
         qr = qrcode.QRCode(
