@@ -8,4 +8,9 @@ reader/share
 reader/beeps.py
 reader/lib64
 reader/pyvenv.cfg
+
+build
+dist
+cafe_qr.spec
+*.db
 reader/userdata.db
