@@ -108,16 +108,16 @@ class generator():
 
         # Command buttons
         # -------------------------------------------------------
-        add_button      = Button(button_frame,text='Add Student ', command = self.gen_code)
+        add_button      = Button(button_frame,text='Add Student ', command = self.add_user)
         remove_button   = Button(button_frame,text='Remove Selected', command = self.remove_selected)
         refresh_button  = Button(button_frame,text='Refresh views', command = self.render_db_view)
-        # update_button   = Button(button_frame,text='Update student', command = self.update_data)
+        update_button   = Button(button_frame,text='Update student', command = self.update_print)
         clear_button    = Button(button_frame,text='Clear inputs ', command = self.clear_input)
         exit_button     = Button(button_frame,text='Exit program',fg="#ff1122", command = root.quit)
         # -------------------------------------------------------
         add_button      .grid(row=10,column=0,padx = 10 , pady = (10,10) ,sticky="NESW" ) 
         remove_button   .grid(row=10,column=1,padx = 10 , pady = (10,10) ,sticky="NESW")
-        # update_button   .grid(row=10,column=2,padx = 10 , pady = (10,10) ,sticky="NESW")
+        update_button   .grid(row=10,column=2,padx = 10 , pady = (10,10) ,sticky="NESW")
         clear_button    .grid(row=11,column=0,padx = 10 , pady = (10,10) ,sticky="NESW")
         exit_button     .grid(row=11,column=1,padx = 10 , pady = (10,10) ,sticky="NESW")
         refresh_button  .grid(row=11,column=2,padx = 10 , pady = (10,10) ,sticky="NESW")
@@ -197,13 +197,12 @@ class generator():
             self.db.remove_one(values[0])
             self.db_view.delete(selection)
             self.render_db_view()
-    # def update_data(self):
-    #     selected = self.db_view.selection()
-    #     data = ''
-    #     for selection in selected:
-    #         values = self.db_view.item(selection,'values')
-    #         self.db.update_one(values[0],data)
-    #         self.db_view.delete(selection)
+    def update_print(self):
+        selected = self.db_view.selection()
+        data = ''
+        for selection in selected:
+            values = self.db_view.item(selection,'values')
+            self.db.update_print_state(values[0],data)
 
     def select_data(self):
         selected = self.db_view.selection()
@@ -221,17 +220,6 @@ class generator():
         self.access_entry.insert(0,values[7])
         return None
 
-    def generate_qr(self,data,main_color,bg_color,qr_ver,padd,box_sixe):
-        
-        qr = qrcode.QRCode(
-            version=qr_ver,
-            error_correction = qrcode.constants.ERROR_CORRECT_Q,
-            box_size=box_sixe,
-            border=padd,
-        )
-        qr.add_data(data)
-        qr.make(fit=True)
-        return qr.make_image(fill_color=main_color, back_color=bg_color)
 
     def render_db_view(self):
         print("[ render ] - db view ")
@@ -254,7 +242,7 @@ class generator():
 
         pass
 
-    def gen_code(self):
+    def add_user(self):
 
         fname_entry_data = self.fname_entry.get().capitalize()
         lname_entry_data = self.lname_entry.get().capitalize()
@@ -307,7 +295,7 @@ class generator():
                 uid_entry_data = f"{uid_chunk[0].upper()}/{uid_chunk[1]}/{uid_chunk[2]}"
             
 
-        self.data = self.db.insert_one(fname_entry_data,lname_entry_data,uid_entry_data,gender_entry_data,enrollment_entry_data,access_entry_data,term_entry_data,time.time())
+        self.data = self.db.insert_one(fname_entry_data,lname_entry_data,uid_entry_data,gender_entry_data,enrollment_entry_data,access_entry_data,term_entry_data,time.time(),'True')
         fill_color  = '#000000'
         background = '#ffffff'
         if self.data.split('_')[-1] == 'exists':

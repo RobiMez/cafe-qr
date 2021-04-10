@@ -20,7 +20,8 @@ class Database:
             enrollment text,
             term text,
             access text,
-            dates_eaten list)""")
+            dates_eaten text,
+            printed text)""")
         self.conn.commit()
 
     def fetch_all(self):
@@ -29,7 +30,7 @@ class Database:
         # print(rows)
         return rows
 
-    def insert_one(self,f_name, l_name, uid, gender, enrollment, access, term, dates_eaten):
+    def insert_one(self,f_name, l_name, uid, gender, enrollment, access, term, dates_eaten,printed):
         print("[ insert ] - Adding a new user.")
         # perfofrm sanitization 
         error = ""
@@ -83,8 +84,9 @@ class Database:
         a = access
         t = term
         d = dates_eaten
+        p = printed
         print('Executing sql')
-        self.cur.execute(f"INSERT INTO users VALUES ('{h}','{f}','{l}','{u}','{g}','{e}','{t}','{a}','{d}')")
+        self.cur.execute(f"INSERT INTO users VALUES ('{h}','{f}','{l}','{u}','{g}','{e}','{t}','{a}','{d}',{p})")
         self.conn.commit()
         return hui
 
@@ -155,18 +157,20 @@ class Database:
         return data
         pass
     
-        
-    # def update_one(self,hui):
-    #     self.cur.execute("UPDATE users SET  WHERE hui = ? ",(hui,))
-    #         self.conn.commit()
-    #     data = self.cur.fetchall()
-    #     return data
-    #     pass
+    def update_print_state(self,hui, print_state):
+        self.cur.execute("UPDATE users SET printed = ? WHERE hui = ? ",(print_state,hui,))
+        self.conn.commit()
+        data = self.cur.fetchall()
+        return data
+        pass
+    
     
     def __del__(self):
         self.conn.close()
 
 
+        
+        
 db = Database('userdata.db')
 
 db.fetch_all()
