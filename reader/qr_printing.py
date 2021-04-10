@@ -63,10 +63,12 @@ class print_interface():
         refresh_button  = Button(self.button_frame,text='Refresh views', command = self.render_db_view)
         exit_button     = Button(self.button_frame,text='Exit program',fg="#ff1122", command = root.quit)
         # -------------------------------------------------------
+        self.print_4_button = Button(self.button_frame,text='Print 4', command = self.print_4,state='disabled')
 
         unprint_button  .grid(row=10,column=1,padx = 10 , pady = (10,10) ,sticky="NESW")
         print_button    .grid(row=10,column=0,padx = 10 , pady = (10,10) ,sticky="NESW")
 
+        self.print_4_button  .grid(row=10,column=2,padx = 10 , pady = (10,10) ,sticky="NESW")
         
         exit_button     .grid(row=11,column=0,padx = 10 , pady = (10,10) ,sticky="NESW")
         refresh_button  .grid(row=11,column=1,padx = 10 , pady = (10,10) ,sticky="NESW")
@@ -171,15 +173,29 @@ class print_interface():
     def select_4_printing(self,e):
         selected = self.db_view.selection()
         print(selected)
+        to_print = []
+        
+        for selection in selected:
+            values = self.db_view.item(selection,'values')
+            print('hui : ',values)
+            data = self.db.fetch_one(values[0])
+            print('data',data)
+            if data[0][-1] == '1':
+                print('1 printed?')
+            elif data[0][-1] == '0':
+                print('0 not printed?')
+                to_print.append(data[0][0])
 
-        if len(selected) ==4 :
+
+        if len(to_print) ==4 :
             print("we at 4 now ")
-            print_4_button = Button(self.button_frame,text='Print 4', command = self.print_4)
-            print_4_button  .grid(row=10,column=2,padx = 10 , pady = (10,10) ,sticky="NESW")
-        else :
-            print_4_button.delete()
+            self.print_4_button.config(state='normal')
+        else:
+            self.print_4_button.config(state='disabled')
+
         self.log_view.delete(0,END)
-        self.log_view.insert(END,len(selected))
+        for item in to_print:
+            self.log_view.insert(END,item)
 
         pass
 

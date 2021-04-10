@@ -1,13 +1,14 @@
 """
 CAFE-QR Administration interface 
 """
-from datetime import datetime
+import os 
+import time
 import qrcode
+from datetime import datetime
 from tkinter import *
 from tkinter import ttk
 from PIL import Image 
-import os 
-import time
+
 from db import Database
 
 print("[ Prerun check ] - Imports Successful.")
@@ -21,7 +22,7 @@ class generator():
     def __init__(self):
         self.db = Database('./../reader/userdata.db')
         self.db_data = self.db.fetch_all()
-        
+        # -------------------------------------------------------
         app_width = 1520
         app_height = 750
         root = Tk()
@@ -29,22 +30,19 @@ class generator():
         screen_height = root.winfo_screenheight()
         x = (screen_width /2) - (app_width/2)
         y = (screen_height /2 )- (app_height/2)
-        
+        # -------------------------------------------------------
         print("screen width ",screen_width)
         print("screen height ",screen_height)
         print("app width ",app_width)
         print("app height ",app_height)
         print("x",x)
         print("y ",y)
-
-
-        
-
-        
-        
+        # -------------------------------------------------------
         root.geometry(f'{app_width}x{app_height}+{int(x/2)}+{int(y/2)}')
-        root.title('Generate qr badge.')
-        
+        root.title('CAFE-QR Administration Interface. ')
+        # ----------------------------------------------------
+        # Frames =============================================
+        # ----------------------------------------------------
         udata_frame     = LabelFrame(root, text="User data",padx =5 ,pady=5)
         udata_frame     .grid(row=0,column=0,columnspan=4,padx =10 ,pady=10,sticky="NESW")
 
@@ -56,8 +54,10 @@ class generator():
 
         db_frame        = LabelFrame(root, text="Database",padx =5 ,pady=5)
         db_frame        .grid(row=0,column=4,columnspan=4,rowspan=20 ,padx =10 ,pady=10,sticky="NESW")
-
-        # Labels
+        # -------------------------------------------------------------
+        # User data ===================================================
+        # -------------------------------------------------------------
+        # Labels ------------------------------------------------------
         fname_label         = Label(udata_frame,text='First name :')
         lname_label         = Label(udata_frame,text='Last name :')
         gender_label        = Label(udata_frame,text='Gender :')
@@ -65,7 +65,7 @@ class generator():
         enrollment_label    = Label(udata_frame,text='Enrollment :')
         term_label          = Label(udata_frame,text='Term :')
         access_label        = Label(udata_frame,text='Access :')
-
+        # -------------------------------------------------------
         fname_label     .grid(row=0, column=0,padx=(15,10),pady=10)
         lname_label     .grid(row=1, column=0,padx=(15,10),pady=10)
         gender_label    .grid(row=2, column=0,padx=(15,10),pady=10)
@@ -73,40 +73,31 @@ class generator():
         enrollment_label.grid(row=4, column=0,padx=(15,10),pady=10)
         term_label      .grid(row=5, column=0,padx=(15,10),pady=10)
         access_label    .grid(row=6, column=0,padx=(15,10),pady=10)
-
-        # Entries
-
+        # Entries -----------------------------------------------------
         self.fname_entry         = Entry(udata_frame, width = 20)
         self.lname_entry         = Entry(udata_frame, width = 20)
         self.sex = StringVar()
         self.sex.set(None)
         self.gender_male         = Radiobutton(udata_frame,text="Male",variable=self.sex,value="Male")
         self.gender_female       = Radiobutton(udata_frame,text="Female",variable=self.sex,value="Female")
-        
         self.uid_entry           = Entry(udata_frame, width = 20)
         self.enrollment_entry    = Entry(udata_frame, width = 20)
-        # term dropdown 
         self.selected_dropdown = StringVar()
         self.selected_dropdown.set("None")
-        
         self.term_dropdown = OptionMenu(udata_frame,self.selected_dropdown,"None","1st year","2nd year")
-        
         self.term_entry          = Entry(udata_frame, width = 20)
         self.access_entry        = Entry(udata_frame, width = 20)
-
+        # -------------------------------------------------------
         self.fname_entry     .grid(row=0, column=1,columnspan=2,padx=10,pady=10)
         self.lname_entry     .grid(row=1, column=1,columnspan=2,padx=10,pady=10)
-        
         self.gender_male     .grid(row=2, column=1,padx=10,pady=10)
         self.gender_female   .grid(row=2, column=2,padx=10,pady=10)
-        
         self.uid_entry       .grid(row=3, column=1,columnspan=2,padx=10,pady=10)
         self.enrollment_entry.grid(row=4, column=1,columnspan=2,padx=10,pady=10)
-        # self.term_entry      .grid(row=5, column=1,columnspan=2,padx=10,pady=10)
         self.term_dropdown   .grid(row=5, column=1,columnspan=2,padx=10,pady=10,sticky=NSEW)
         self.access_entry    .grid(row=6, column=1,columnspan=2,padx=10,pady=10)
-
-        # Command buttons
+        # -------------------------------------------------------
+        # Command buttons =======================================
         # -------------------------------------------------------
         add_button      = Button(button_frame,text='Add Student ', command = self.add_user)
         remove_button   = Button(button_frame,text='Remove Selected', command = self.remove_selected)
@@ -121,26 +112,27 @@ class generator():
         clear_button    .grid(row=11,column=0,padx = 10 , pady = (10,10) ,sticky="NESW")
         exit_button     .grid(row=11,column=1,padx = 10 , pady = (10,10) ,sticky="NESW")
         refresh_button  .grid(row=11,column=2,padx = 10 , pady = (10,10) ,sticky="NESW")
-
-        # log_view
+        # -------------------------------------------------------
+        # log_view =============================================
+        # -------------------------------------------------------
         self.log_view = Listbox(log_frame ,height=10, width=40,font=('raleway'),fg='#000',bg="#fff")
         self.log_view.grid(row = 0, column = 0,columnspan=4,rowspan=1,sticky="NESW")
         # -------------------------------------------------------
-        # db_view scrollbar 
+        # db_view scrollbar -------------------------------------
         self.db_view_scrollbar  = Scrollbar(db_frame)
         self.db_view_scrollbar.grid(row=0,column=6,rowspan=100,sticky=NSEW)
-        # db_view_styles 
+        # db_view_styles ----------------------------------------
         self.db_view_styles = ttk.Style()
         self.db_view_styles.theme_use('clam')
         self.db_view_styles.configure(
             "Treeview",
             background='#fdfdfd',
             rowheight=20,
-
         )
         self.db_view_styles.map('Treeview',
                 background = [('selected','steelblue')])
-        # db_view
+        # -------------------------------------------------------
+        # db_view ===============================================
         # -------------------------------------------------------
         self.db_view = ttk.Treeview(db_frame,height=30,yscrollcommand=self.db_view_scrollbar.set)
         self.db_view['columns'] = ("hui","fname","lname","uid","gender","enrollment","term","access")
@@ -172,13 +164,8 @@ class generator():
             self.select_data()
         self.db_view.grid(row=0, column=5, rowspan=100, padx=10, pady=10)
         self.db_view.bind("<Double-1>",select_record)
-        def ping():
-            print('pong')
-        # self.db_view.bind("<Double-1>",ping)
-        
-
+        # -------------------------------------------------------
         root.mainloop()
-        pass
 
     def clear_input(self):
         self.fname_entry.delete(0, END)
@@ -197,6 +184,7 @@ class generator():
             self.db.remove_one(values[0])
             self.db_view.delete(selection)
             self.render_db_view()
+
     def update_print(self):
         selected = self.db_view.selection()
         data = ''
@@ -219,7 +207,6 @@ class generator():
         self.selected_dropdown.set(values[6])
         self.access_entry.insert(0,values[7])
         return None
-
 
     def render_db_view(self):
         print("[ render ] - db view ")
@@ -248,8 +235,6 @@ class generator():
         lname_entry_data = self.lname_entry.get().capitalize()
         gender_entry_data = self.sex.get()
         uid_entry_data = self.uid_entry.get()
-
-        
         enrollment_entry_data = self.enrollment_entry.get()
         term_entry_data = self.selected_dropdown.get()
         access_entry_data = self.access_entry.get()

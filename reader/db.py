@@ -29,6 +29,11 @@ class Database:
         rows = self.cur.fetchall()
         # print(rows)
         return rows
+    
+    def fetch_one(self,hui):
+        self.cur.execute("SELECT * FROM users  WHERE hui = ? " ,(hui,))
+        rows = self.cur.fetchall()
+        return rows
 
     def insert_one(self,f_name, l_name, uid, gender, enrollment, access, term, dates_eaten,printed):
         print("[ insert ] - Adding a new user.")
