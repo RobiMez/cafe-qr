@@ -8,7 +8,7 @@ import cv2
 from datetime import datetime
 from tkinter import *
 from tkinter import ttk
-from PIL import Image 
+from PIL import Image, ImageDraw, ImageFont
 from playsound import playsound
 from db import Database
 print("[ Prerun check ] - Imports Successful.")
@@ -32,6 +32,115 @@ printer = Frame(notebook,width=app_width,height=app_height)
 
 notebook.add(admin, text='  Administration  ')
 notebook.add(printer,text="  Printing  ")
+
+class generator():
+    def __init__(self):
+        # load in the fonts
+        self.rubik = ImageFont.truetype(
+            "./fonts/Rubik/static/Rubik-Regular.ttf", 36)
+        self.rubik_med = ImageFont.truetype(
+            "./fonts/Rubik/static/Rubik-Medium.ttf", 36)
+        self.qsand = ImageFont.truetype(
+            "./fonts/Quicksand/static/Quicksand-Medium.ttf", 60)
+
+    def gen_a4px(self):
+        # A4 standard size in pixels 2480,3508
+        # halved : 1240,1754
+        # 874,1240
+
+        base = Image.new('RGBA', (2480, 3508), color=(255, 255, 255, 0))
+        a4 = Image.new('RGBA', (2480, 3508), color=(255, 255, 255, 255))
+        canvas = ImageDraw.Draw(a4)
+
+        # canvas.text((10,60), "World", font=rubik, fill=(0,0,0,255))
+
+        return canvas, a4,base
+
+    def generate_qr(self):
+        pass
+
+    def draw_grids(self, canvas):
+        print('- draw grid system  -')
+        print('Canvas param - ', canvas)
+        for x in range(0, 3508, 200):
+            canvas.line([(0, x), (2480, x)], fill=(
+                0, 0, 0, 255), width=1, joint="curve")
+            # print(x)
+        for y in range(0, 3508, 200):
+            canvas.line([(y, 0), (y, 3508)], fill=(
+                0, 0, 0, 255), width=1, joint="curve")
+            # print(y)
+
+    def draw_major_coords(self, canvas):
+        print('- draw major coords  -')
+        print("Canvas param - ", canvas)
+        # verticals
+        canvas.line([(620, 0), (620, 3508)], fill=(
+            0, 0, 0, 255), width=3, joint="curve")
+        canvas.line([(1860, 0), (1860, 3508)], fill=(
+            0, 0, 0, 255), width=3, joint="curve")
+        canvas.line([(1240, 0), (1240, 3508)], fill=(
+            0, 0, 0, 255), width=3, joint="curve")
+        # horizontals
+        canvas.line([(0, 877), (2480, 877)], fill=(
+            0, 0, 0, 255), width=3, joint="curve")
+        canvas.line([(0, 1754), (2480, 1754)], fill=(
+            0, 0, 0, 255), width=3, joint="curve")
+        canvas.line([(0, 2631), (2480, 2631)], fill=(
+            0, 0, 0, 255), width=3, joint="curve")
+        pass
+
+    def paste_badge_background(self, canvas, coord):
+        print('- draw badge background  -')
+        print('Canvas param -', canvas)
+        print('Coord param -', coord)
+
+        
+        for point in coord:
+            print("Generating badge on : ", point)
+            print("A : ", point[0])
+            print("B : ", point[1])
+            print("W : ", point[1][0]-point[0][0])
+            print("H : ", point[1][1]-point[0][1])
+            print('pasting badge background')
+            print('pasting qr code ')
+            print('pasting photo')
+            canvas.paste(Image.open('./badge_bg.png'),point[0])
+
+    def write_data(self, canvas, coord, data):
+        print('- Write data operation    -')
+        print('Canvas param -', canvas)
+        print('Coord param -', coord)
+        print('Data param -', data)
+        i = 0 
+        for point in coord:
+            print("Generating badge on : ", point)
+            print("A : ", point[0])
+            print("B : ", point[1])
+            print("W : ", point[1][0]-point[0][0])
+            print("H : ", point[1][1]-point[0][1])
+
+            print('Writing user data:')
+
+            canvas.text((coord[i][0][0]+437,coord[i][0][1]+734),f"{data[i][0]} {data[i][1]}", font=self.qsand, fill=(0,0,0,255),anchor='ms')
+            canvas.text((coord[i][0][0]+60,coord[i][0][1]+794),f"UID : {data[i][2]}", font=self.rubik_med, fill=(0,0,0,255),anchor='lt')
+            canvas.text((coord[i][0][0]+60,coord[i][0][1]+864),f"Gender : {data[i][3]}", font=self.rubik, fill=(0,0,0,255),anchor='lt')
+            canvas.text((coord[i][0][0]+60,coord[i][0][1]+934),f"Enrollment : {data[i][4]}", font=self.rubik, fill=(0,0,0,255),anchor='lt')
+            canvas.text((coord[i][0][0]+60,coord[i][0][1]+1004),f"Term : {data[i][5]}", font=self.rubik, fill=(0,0,0,255),anchor='lt')
+            canvas.text((coord[i][0][0]+60,coord[i][0][1]+1074),f"Access : {data[i][6]}", font=self.rubik, fill=(0,0,0,255),anchor='lt')
+
+            i = i + 1
+
+    def show_a4(self, a4,base):
+        out = Image.alpha_composite(base, a4)
+        print('--│ Previewing image ')
+        out.show()
+
+    def save_a4(self, a4,base,name):
+        out = Image.alpha_composite(base, a4)
+        out_dir = "./badges"
+        print(f'--│ Saving image as {out_dir}/{name}.png')
+        out.save(f'{out_dir}/{name}.png')
 
 # Administration class 
 class administration():
@@ -336,8 +445,8 @@ class print_interface():
         refresh_button  .grid(row=11,column=1,padx = 10 , pady = (10,10) ,sticky="NESW")
 
         # log_view
-        self.log_view = Listbox(self.log_frame ,height=10, width=40,fg='#000',bg="#fff")
-        self.log_view.grid(row = 0, column = 0,columnspan=4,rowspan=1,sticky="NESW")
+        self.log_view = Listbox(self.log_frame ,height=10, width=50,fg='#000',bg="#fff")
+        self.log_view.grid(row = 0, column = 0,sticky="NESW")
         # -------------------------------------------------------
         # db_view scrollbar 
         self.db_view_scrollbar  = Scrollbar(db_frame)
@@ -381,8 +490,6 @@ class print_interface():
         # -------------------------------------------------------
         self.render_db_view()
         # -------------------------------------------------------
-        def select_record(e):
-            self.select_data()
         self.db_view.grid(row=0, column=5, rowspan=100, padx=10, pady=10)
         # self.db_view.bind("<Double-1>",select_record)
         self.db_view.bind("<ButtonRelease-1>",self.select_4_printing)
@@ -409,15 +516,6 @@ class print_interface():
         self.render_db_view()
         pass
 
-    def clear_input(self):
-        self.fname_entry.delete(0, END)
-        self.lname_entry.delete(0, END)
-        self.sex.set(None)
-        self.uid_entry.delete(0, END)
-        self.enrollment_entry.delete(0, END)
-        self.selected_dropdown.set('None')
-        self.access_entry.delete(0, END)
-        return None
 
     def select_data(self):
         selected = self.db_view.selection()
@@ -447,8 +545,8 @@ class print_interface():
                 print('0 not printed?')
                 to_print.append(data[0][0])
 
-
-        if len(to_print) ==4 :
+        # only enable the print 4 button if there are 4 elements selected 
+        if len(to_print) == 4 :
             print("we at 4 now ")
             self.print_4_button.config(state='normal')
         else:
@@ -461,6 +559,39 @@ class print_interface():
         pass
 
     def print_4(self):
+        selected = self.db_view.selection()
+        print("4 selected ", selected)
+        to_print = []
+        
+        for selection in selected:
+            values = self.db_view.item(selection,'values')
+            dbreturn = self.db.fetch_one(values[0])
+            print("4 values ", values)
+            print("4 dbreturn ", dbreturn)
+            entry = (dbreturn[0][1],dbreturn[0][2],dbreturn[0][3],dbreturn[0][4],dbreturn[0][5],dbreturn[0][6],dbreturn[0][7])
+            to_print.append(entry)
+        print("toprint",to_print)
+        userdata = [("Dawit","Solomon","GUR/00000/12","Male","Engeneering","2nd year","Student",),
+                    ("Tony","Doe","GUR/00010/12","Male","Construction","2nd year","Student",),
+                    ("Deez","Ligma","GUR/01000/12","Male","Arcture","2nd year","Student",),
+                    ("Gebresolomon","Hailemichael","GUR/07000/12","Male","Design","2nd year","Student",),
+                    ]
+        
+        gen = generator()
+        a4_canvas = gen.gen_a4px()
+        canvas = a4_canvas[0]
+        a4 = a4_canvas[1]
+        base = a4_canvas[2]
+        badge_coords = [[(183, 257), (1057, 1497)], 
+                        [(1423, 257), (2297, 1497)], 
+                        [(183, 2011), (1057, 3251)], 
+                        [(1423, 2011), (2297, 3251)]]
+        # draw sequence : 
+        gen.draw_major_coords(canvas)
+        gen.paste_badge_background(a4,badge_coords)
+        gen.write_data(canvas, badge_coords, to_print)
+        gen.save_a4(a4,base,'owo')
+
         pass
 
     def generate_qr(self,data,main_color,bg_color,qr_ver,padd,box_sixe):
@@ -504,7 +635,5 @@ def refresh_notebook(e):
     print_ui.render_db_view()
 
 notebook.bind('<<NotebookTabChanged>>',refresh_notebook)
-
-
 
 root.mainloop()
