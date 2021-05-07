@@ -163,7 +163,6 @@ class Database:
         self.conn.commit()
         data = self.cur.fetchall()
         return data
-        pass
     
     def update_print_state(self,hui, print_state):
         self.cur.execute("UPDATE users SET printed = ? WHERE hui = ? ",(print_state,hui,))

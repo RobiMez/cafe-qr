@@ -30,9 +30,11 @@ notebook.grid(row=0,column=0,padx=1,sticky=NSEW)
 
 admin = Frame(notebook,width=app_width,height=app_height)
 printer = Frame(notebook,width=app_width,height=app_height)
+eimporter = Frame(notebook,width=app_width,height=app_height)
 
 notebook.add(admin, text='  Administration  ')
 notebook.add(printer,text="  Printing  ")
+notebook.add(eimporter,text="  Export/Import  ")
 
 # Generator class
 class generator():
@@ -531,11 +533,10 @@ class print_interface():
         exit_button     = Button(self.button_frame,text='Exit program',fg="#ff1122", command = root.quit)
         # -------------------------------------------------------
         self.print_4_button = Button(self.button_frame,text='Print 4', command = self.print_4,state='disabled')
+        self.print_4_button  .grid(row=10,column=2,padx = 10 , pady = (10,10) ,sticky="NESW")
 
         unprint_button  .grid(row=10,column=1,padx = 10 , pady = (10,10) ,sticky="NESW")
         print_button    .grid(row=10,column=0,padx = 10 , pady = (10,10) ,sticky="NESW")
-
-        self.print_4_button  .grid(row=10,column=2,padx = 10 , pady = (10,10) ,sticky="NESW")
         
         exit_button     .grid(row=11,column=0,padx = 10 , pady = (10,10) ,sticky="NESW")
         refresh_button  .grid(row=11,column=1,padx = 10 , pady = (10,10) ,sticky="NESW")
@@ -774,8 +775,51 @@ class print_interface():
             count += 1
         pass
 
+class eimport():
+    def __init__(self):
+        self.db = Database('../userdata.db')
+        self.db_data = self.db.fetch_all()
+        root = eimporter 
+        
+        self.button_frame    = LabelFrame(root, text="Commands",padx =5 ,pady=5)
+        self.button_frame    .grid(row=0,column=0,padx =10 ,pady=10,sticky="NESW")
+
+        export_button = Button(self.button_frame,text='Export as CSV', command = self.export_csv)
+        # import_button = Button(self.button_frame,text='Import from CSV ', command = root.quit ,state="disabled")
+        
+        exit_button     = Button(self.button_frame,text='Exit program',fg="#ff1122", command = root.quit)
+        
+        export_button.grid(row=0,column = 0,padx = 10 , pady = (10,10) ,sticky="NESW" )
+        # import_button.grid(row=0,column = 1,padx = 10 , pady = (10,10) ,sticky="NESW")
+        exit_button.grid(row=0 ,column = 2,padx = 10 , pady = (10,10) ,sticky="NESW" )
+        
+    def export_csv(self):
+        print('Export triggered ')
+        self.db = Database('../userdata.db')
+        self.db_data = self.db.fetch_all()
+        
+        export_dir = './exports/'
+        current_time = time.strftime('%A-%B-%d_%m_%Y-%H_%M_%S')
+        
+
+        print(current_time,'\n')
+        # print(filename,'\n')
+        export_file = open(f'{export_dir}{current_time}Export.csv','w')
+        export_file.write('HUI,First_name,Last_name,UID,Sex,Stream,Term,Access,Time_eaten,Print_status\n')
+        for record in self.db_data : 
+            print(record,'\n')
+            subrec = ''
+            for item in record : 
+                subrec = subrec + item + ','
+            subrec = subrec+ "\n"
+            print(subrec)
+            export_file.write(subrec)
+        export_file.close()
+        
+
 admin_ui = administration()
 print_ui = print_interface()
+eimport_ui = eimport()
 
 def refresh_notebook(e):
     admin_ui.render_db_view()
