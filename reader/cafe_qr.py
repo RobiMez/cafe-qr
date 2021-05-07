@@ -1,4 +1,4 @@
-
+# library imports : 
 import os 
 import time
 import qrcode
@@ -6,26 +6,27 @@ import sqlite3
 import hashlib
 import cv2
 from datetime import datetime
-from tkinter import *
+from tkinter import Tk,Frame,LabelFrame,Entry,StringVar,Radiobutton,NSEW,Label,Listbox,CENTER,NO,END,OptionMenu,Button,Scrollbar
 from tkinter import ttk
 from PIL import Image, ImageDraw, ImageFont
 from playsound import playsound
 from db import Database
 print("[ Prerun check ] - Imports Successful.")
+# window root definition 
 
 root = Tk()
 app_width = 1520
-app_height = 780
+app_height = 740
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 x = (screen_width /2) - (app_width/2)
 y = (screen_height /2 )- (app_height/2)
-
+# window size and positioning 
 root.geometry(f'{app_width}x{app_height}+{int(x/2)}+{int(y/2)}')
-root.title('Print interface .')
-
+root.title('Cafe QR Administration & Printing ')
+# notebook definition 
 notebook = ttk.Notebook(root)
-notebook.grid(row=0,column=0)
+notebook.grid(row=0,column=0,padx=1,sticky=NSEW)
 
 admin = Frame(notebook,width=app_width,height=app_height)
 printer = Frame(notebook,width=app_width,height=app_height)
@@ -33,9 +34,22 @@ printer = Frame(notebook,width=app_width,height=app_height)
 notebook.add(admin, text='  Administration  ')
 notebook.add(printer,text="  Printing  ")
 
+# Generator class
 class generator():
+    """QR Code Generator 
+    Methods : 
+        gen_a4px
+        generate_qr
+        generate_single_code
+        draw_grids
+        draw_major_coords
+        paste_badge_background
+        write_data
+        show_a4
+        save_a4
+    """
     def __init__(self):
-        # load in the fonts
+        # load in custom fonts
         self.rubik = ImageFont.truetype(
             "./fonts/Rubik/static/Rubik-Regular.ttf", 36)
         self.rubik_med = ImageFont.truetype(
@@ -44,21 +58,35 @@ class generator():
             "./fonts/Quicksand/static/Quicksand-Medium.ttf", 60)
 
     def gen_a4px(self):
+        """
+        Inputs : 
+            self
+        Outputs : 
+            canvas : PIL image draw object ( canvas but drawable )
+            a4 : white a4 size canvas for printing 
+            base : transparent mask for alpha compositing 
+        """
         # A4 standard size in pixels 2480,3508
         # halved : 1240,1754
-        # 874,1240
 
         base = Image.new('RGBA', (2480, 3508), color=(255, 255, 255, 0))
         a4 = Image.new('RGBA', (2480, 3508), color=(255, 255, 255, 255))
         canvas = ImageDraw.Draw(a4)
-
-        # canvas.text((10,60), "World", font=rubik, fill=(0,0,0,255))
-
         return canvas, a4,base
 
-
     def generate_qr(self,data,main_color,bg_color,qr_ver,padd,box_sixe):
-        # generate a single qr and return image object 
+        """
+        Inputs :
+            self
+            data: data to encode as a qr code 
+            main_color : color of the readable qr code surface 
+            bg_color : background color of the qr code 
+            qr_ver : version of the qr code ( how much data it should store ) 
+            padd : padding from the surrounding pixels 
+            box_size : size of the qr code boxes 
+        Outputs :
+            PIL image object , ready for pasting 
+        """
         qr = qrcode.QRCode(
             version=qr_ver,
             error_correction = qrcode.constants.ERROR_CORRECT_Q,
@@ -71,28 +99,45 @@ class generator():
         return qr.make_image(fill_color=main_color, back_color=bg_color)
 
     def generate_single_code(self,hui):
-        
+        """
+        Inputs : 
+            self
+            hui: data to store into the qr code 
+        Outputs : 
+            qr_code : PIL image 
+        """
         fill_color  = '#000000'
         background = '#ffffff'
         qr_code = self.generate_qr(hui,fill_color,background,2,1,20)
         return qr_code
 
-
     def draw_grids(self, canvas):
-        print('- draw grid system  -')
-        print('Canvas param - ', canvas)
-        for x in range(0, 3508, 200):
+        """
+        Inputs : 
+            self
+            canvas : pil canvas to draw on 
+        Outputs : 
+            None ( Draws grids on the canvas at 100px divisions .)
+        """
+        # print('[ Grid ] - drawing grid with 200 pixel subdivisions ')
+        # print('[ Grid ] - Canvas param - ', canvas)
+        for x in range(0, 3608, 100):
             canvas.line([(0, x), (2480, x)], fill=(
                 0, 0, 0, 255), width=1, joint="curve")
-            # print(x)
-        for y in range(0, 3508, 200):
+        for y in range(0, 3608, 100):
             canvas.line([(y, 0), (y, 3508)], fill=(
                 0, 0, 0, 255), width=1, joint="curve")
-            # print(y)
 
     def draw_major_coords(self, canvas):
-        print('- draw major coords  -')
-        print("Canvas param - ", canvas)
+        """
+        Inputs : 
+            self
+            canvas : pil canvas to draw on 
+        Outputs : 
+            None ( Draws grids on the canvas through the middle and at center points of the badge area .)
+        """
+        # print('[ Grid ] - drawing grid on major axes and badge location  ')
+        # print('[ Grid ] - Canvas param - ', canvas)
         # verticals
         canvas.line([(620, 0), (620, 3508)], fill=(
             0, 0, 0, 255), width=3, joint="curve")
@@ -107,41 +152,45 @@ class generator():
             0, 0, 0, 255), width=3, joint="curve")
         canvas.line([(0, 2631), (2480, 2631)], fill=(
             0, 0, 0, 255), width=3, joint="curve")
-        pass
 
     def paste_badge_background(self, canvas, coord):
-        print('- draw badge background  -')
-        print('Canvas param -', canvas)
-        print('Coord param -', coord)
-
+        """
+        Input : 
+            self : 
+            canvas : canvas to paste on 
+            coord : coordinates to paste at 
+        Output : 
+            None ( Pastes badge background onto the coordinates provided )
+        """
+        # print('[ Paste bg ] - Pasting badge background  -')
+        # print('[ Paste bg ] - Canvas param -', canvas)
+        # print('[ Paste bg ] - Coord param -', coord)
         
         for point in coord:
-            print("Generating badge on : ", point)
-            print("A : ", point[0])
-            print("B : ", point[1])
-            print("W : ", point[1][0]-point[0][0])
-            print("H : ", point[1][1]-point[0][1])
-            print('pasting badge background')
-            print('pasting qr code ')
-            print('pasting photo')
+            print("[ Paste bg ] - Pasting badge background on : ", point[0])
             canvas.paste(Image.open('./badge_bg.png'),point[0])
 
     def write_data(self, canvas, coord, data):
-        print('- Write data operation    -')
-        print('Canvas param -', canvas)
-        print('Coord param -', coord)
-        print('Data param -', data)
+        """
+        Input : 
+            self : 
+            canvas : canvas to write on 
+            coord : coordinates to write on  
+            data : user data to write on 
+        Output : 
+            None ( Writes user data on the coordinates provided )
+        """
+        # print('[ Write ]  - Write User data    -')
+        # print('[ Write ]  - Canvas param -', canvas)
+        # print('[ Write ]  - Coord param -', coord)
+        # print('[ Write ]  - Data param -', data)
+        
         i = 0 
         for point in coord:
-            print("Generating badge on : ", point)
-            print("A : ", point[0])
-            print("B : ", point[1])
-            print("W : ", point[1][0]-point[0][0])
-            print("H : ", point[1][1]-point[0][1])
-
-            print('Writing user data:')
-
+            print("[ Write ]  - Writing on : ", point)
+            # Centered name 
             canvas.text((coord[i][0][0]+437,coord[i][0][1]+734),f"{data[i][0]} {data[i][1]}", font=self.qsand, fill=(0,0,0,255),anchor='ms')
+            # left aligned details 
             canvas.text((coord[i][0][0]+60,coord[i][0][1]+794),f"UID : {data[i][2]}", font=self.rubik_med, fill=(0,0,0,255),anchor='lt')
             canvas.text((coord[i][0][0]+60,coord[i][0][1]+864),f"Gender : {data[i][3]}", font=self.rubik, fill=(0,0,0,255),anchor='lt')
             canvas.text((coord[i][0][0]+60,coord[i][0][1]+934),f"Enrollment : {data[i][4]}", font=self.rubik, fill=(0,0,0,255),anchor='lt')
@@ -151,26 +200,50 @@ class generator():
             i = i + 1
 
     def show_a4(self, a4,base):
+        """
+        Inputs : self
+            a4 : white canvas 
+            base : alpha composite transparent canvas 
+        Outputs : 
+            None ( Displays the image generated ( a4 ) to the screen with the default photo viewer )
+        """
         out = Image.alpha_composite(base, a4)
-        print('--│ Previewing image ')
+        print('[ Preview ] Previewing image ')
         out.show()
 
     def save_a4(self, a4,base,name):
+        """
+        Inputs : self
+            a4 : white canvas 
+            base : alpha composite transparent canvas 
+            name : The filename of the image to be saved 
+        Outputs : 
+            None ( saves the image into the out_dir with the filename of name .)
+        """
         out = Image.alpha_composite(base, a4)
         out_dir = "./badges"
-        print(f'--│ Saving image as {out_dir}/{name}.png')
+        print(f'[ Save ] - Saving image as {out_dir}/{name}.png')
         out.save(f'{out_dir}/{name}.png')
-
 # Administration class 
 class administration():
+    """
+    Administration class methods:
+        clear_input
+        remove_selected
+        update_user
+        select_data
+        render_db_view
+        add_user
+    """
     def __init__(self):
-        self.db = Database('userdata.db')
+        # define which database to use for the admin page 
+        self.db = Database('../userdata.db')
         self.db_data = self.db.fetch_all()
-        # -------------------------------------------------------
+        # ---------------------------------------------------------------------
         root = admin
-        # ----------------------------------------------------
-        # Frames =============================================
-        # ----------------------------------------------------
+        # ---------------------------------------------------------------------
+        # Frames ==============================================================
+        # ---------------------------------------------------------------------
         udata_frame     = LabelFrame(root, text="User data",padx =5 ,pady=5)
         udata_frame     .grid(row=0,column=0,columnspan=4,padx =10 ,pady=10,sticky="NESW")
 
@@ -240,12 +313,9 @@ class administration():
         clear_button    .grid(row=11,column=0,padx = 10 , pady = (10,10) ,sticky="NESW")
         exit_button     .grid(row=11,column=1,padx = 10 , pady = (10,10) ,sticky="NESW")
         refresh_button  .grid(row=11,column=2,padx = 10 , pady = (10,10) ,sticky="NESW")
-        # -------------------------------------------------------
         # log_view =============================================
-        # -------------------------------------------------------
-        self.log_view = Listbox(log_frame ,height=10, width=40,font=('raleway'),fg='#000',bg="#fff")
+        self.log_view = Listbox(log_frame ,height=10, width=55,fg='#000',bg="#fff")
         self.log_view.grid(row = 0, column = 0,columnspan=4,rowspan=1,sticky="NESW")
-        # -------------------------------------------------------
         # db_view scrollbar -------------------------------------
         self.db_view_scrollbar  = Scrollbar(db_frame)
         self.db_view_scrollbar.grid(row=0,column=6,rowspan=100,sticky=NSEW)
@@ -294,8 +364,10 @@ class administration():
         self.db_view.bind("<Double-1>",select_record)
         # -------------------------------------------------------
 
-
     def clear_input(self):
+        """
+        Clears the input fields.
+        """
         self.fname_entry.delete(0, END)
         self.lname_entry.delete(0, END)
         self.sex.set(None)
@@ -306,6 +378,9 @@ class administration():
         return None
 
     def remove_selected(self):
+        """
+        Removes a user from the database and the view.
+        """
         selected = self.db_view.selection()
         for selection in selected:
             values = self.db_view.item(selection,'values')
@@ -315,7 +390,6 @@ class administration():
 
     def update_user(self):
         selected = self.db_view.selection()
-        data = ''
         print(f"[ Update button ] - Selected :{selected}")
         if len(selected) == 1:
             for selection in selected:
@@ -331,7 +405,6 @@ class administration():
                 retun = self.db.update_one(values[0],fname_entry_data,lname_entry_data,uid_entry_data,gender_entry_data,enrollment_entry_data,access_entry_data,term_entry_data)
                 print("return value of query : ",retun)
                 self.render_db_view()
-
 
     def select_data(self):
         selected = self.db_view.selection()
@@ -357,7 +430,7 @@ class administration():
         self.db_view.delete(*self.db_view.get_children())
         # render data
         self.db_view.tag_configure('oddrows',background='white')
-        self.db_view.tag_configure('evenrows',background='#f1f1f1')
+        self.db_view.tag_configure('evenrows',background='#f4f4f4')
         global count
         count = 0
         for entry in self.db_data:
@@ -367,8 +440,6 @@ class administration():
             elif count%2 == 1:
                 self.db_view.insert(parent='',index='end',iid=count,text='',values=(display),tags=('oddrows',))
             count += 1
-
-        pass
 
     def add_user(self):
 
@@ -401,14 +472,14 @@ class administration():
             return None
         else:
             try:
-                chunk_mid = type(int(uid_chunk[1]))
-            except ValueError as e :
+                type(int(uid_chunk[1]))
+            except ValueError :
                 self.log_view.insert(END,'Error : uid format incorrect: middle')
                 self.log_view.insert(END,'Must be of the form : GUR/00000/12 ')
                 return None
             try:
-                chunk_mid = type(int(uid_chunk[2]))
-            except ValueError as e :
+                type(int(uid_chunk[2]))
+            except ValueError :
                 self.log_view.insert(END,'Error : uid format incorrect: last')
                 self.log_view.insert(END,'Must be of the form : GUR/00000/12 ')
                 return None
@@ -419,31 +490,24 @@ class administration():
                 return None
             else:
                 uid_entry_data = f"{uid_chunk[0].upper()}/{uid_chunk[1]}/{uid_chunk[2]}"
-            
+
 
         self.data = self.db.insert_one(fname_entry_data,lname_entry_data,uid_entry_data,gender_entry_data,enrollment_entry_data,access_entry_data,term_entry_data,time.time(),'False')
-        fill_color  = '#000000'
-        background = '#ffffff'
         if self.data.split('_')[-1] == 'exists':
             # it there is already a user
             print("[ Error ] - User exists ")
             self.log_view.insert(END,'Error : User already esists  ')
-            self.render_db_view()
         elif self.data.split('_')[-1] == 'none':
             # if there is a none error
             print("[ Error ] - None value ")
             self.log_view.insert(END,'Error : No values inserted ')
-            self.render_db_view()
-        else:
-            # qr_code = self.generate_qr(self.data,fill_color,background,2,1,20)
-            # qr_code.save(os.path.join(badge_dir , f'{current_time}-{fname_entry_data}-qrcode.png'))
-            print("[ QR ] QRcode Generated.")
-            self.render_db_view()
+
+        self.render_db_view()
         return None
 # Printing class
 class print_interface():
     def __init__(self):
-        self.db = Database('userdata.db')
+        self.db = Database('../userdata.db')
         self.db_data = self.db.fetch_all()
         
         root = printer
@@ -615,9 +679,9 @@ class print_interface():
                         [(1423, 2011), (2297, 3251)]]
         # draw sequence : 
         self.gen.draw_major_coords(canvas)
+        self.gen.draw_grids(canvas)
         self.gen.paste_badge_background(a4,badge_coords)
         self.gen.write_data(canvas, badge_coords, to_print)
-
 
         self.paste_qr(a4,badge_coords)
         namestr = ''
@@ -628,8 +692,16 @@ class print_interface():
         self.set_printed()
 
         pass
+    
     def paste_qr(self,canvas,coords):
-        # uses single gen to paste images onto the whole 
+        """
+        Inputs : 
+            canvas
+            coords
+        Outputs :
+            
+        
+        """
         print("coords: ",coords)
         print("canvas: ",canvas)
         # for the 4 thingies 
@@ -653,14 +725,24 @@ class print_interface():
             j = j + 1
 
 
-            code.save(f"{j}.png")
+            # code.save(f"{j}.png")
             print("code",code)
             
             print("saved qr image ")
         pass
     
     def generate_qr(self,data,main_color,bg_color,qr_ver,padd,box_sixe):
-        
+        """
+        Inputs :
+            data (contents of the code )
+            main_color ( color of the qr code foreground )
+            bg_color ( color of the qr code background)
+            qr_ver ( qr code version )
+            padd ( padding between the readable code and the surrounding pixels  )
+            box_size ( box size )
+        Outputs : 
+            Pillow image object 
+        """
         qr = qrcode.QRCode(
             version=qr_ver,
             error_correction = qrcode.constants.ERROR_CORRECT_Q,

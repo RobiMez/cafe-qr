@@ -110,7 +110,7 @@ class Database:
             time_last_scanned = data[0][0]
             timenow = time.time()
             # The difference in time between last scanned and current time 
-            time_difference  = timenow - time_last_scanned 
+            time_difference  = float(timenow) - float(time_last_scanned) 
 
             tdiff_secs = round(time_difference,2)
             tdiff_min = round(time_difference/60,2)
@@ -118,29 +118,32 @@ class Database:
             tdiff_hrs = round(time_difference/360,2)
             tdiff_dys = round(time_difference/8640,2)
 
-            # print('Time since last scan : ')
-            # print('\t',tdiff_secs, 'Seconds')
-            # print('\t',tdiff_min,  'Minutes')
-            # print('\t',tdiff_hrs , 'Hours')
-            # print('\t',tdiff_dys , 'Days\n')
+            print('Time since last scan : ')
+            print('\t',tdiff_secs, 'Seconds')
+            print('\t',tdiff_min,  'Minutes')
+            print('\t',tdiff_hrs , 'Hours')
+            print('\t',tdiff_dys , 'Days\n')
 
-            if tdiff_secs > 13:
-                
-                # if the time between scans is above 2 minutes , user is sus 
-                # register the scan but also sound the alarm 
-                self.cur.execute("UPDATE users SET dates_eaten = ? WHERE hui = ? ", (timenow,hui))
-                self.conn.commit()
-                print('[ Error ] - Duplicate entry attempt ')
-                self.cur.execute("SELECT * FROM users WHERE hui = ? ",(hui,))
-                data = self.cur.fetchall()
-                return ("dupe entry",data)
-                # Sound da alarms 
 
-            elif time_difference/360 > 2.1 :
+
+            if tdiff_hrs > 2.1 :
                 # valid if the difference in scan times is above 2 hours and a bit more  
                 self.cur.execute("UPDATE users SET dates_eaten = ? WHERE hui = ? ", (timenow,hui))
                 self.conn.commit()
                 pass
+            elif tdiff_secs > 6:
+                self.cur.execute("SELECT * FROM users WHERE hui = ? ",(hui,))
+                data = self.cur.fetchall()
+                # if the time between scans is above 2 minutes , user is sus 
+                # register the scan but also sound the alarm 
+                if data[0][7] == "Developer":
+                    pass
+                else :
+                    self.cur.execute("UPDATE users SET dates_eaten = ? WHERE hui = ? ", (timenow,hui))
+                    self.conn.commit()
+                    print('[ Error ] - Duplicate entry attempt ')
+                    return ("dupe entry",data)
+                # Sound da alarms 
             else : 
                 self.cur.execute("UPDATE users SET dates_eaten = ? WHERE hui = ? ", (timenow,hui))
                 self.conn.commit()
@@ -167,7 +170,6 @@ class Database:
         self.conn.commit()
         data = self.cur.fetchall()
         return data
-
 
     def update_one(self,hui,f_name, l_name, uid, gender, enrollment, access, term,):
         print(f"[ Update ] - Updating user : {hui}")
@@ -221,6 +223,7 @@ class Database:
                         l_name = :l_name,
                         gender = :gender,
                         enrollment = :enrollment,
+                        uid = :uid,
                         term = :term,
                         access = :access,
                         printed = '0'
@@ -233,27 +236,12 @@ class Database:
                             ,"l_name": l_name
                             ,"gender": gender
                             ,"enrollment": enrollment
+                            ,"uid":uid
                             ,"term": term
                             ,"access": access
                             ,"hui": hui
                             
                         })
-        
-        
-        
-        
-        
-        
-        
-        # self.cur.execute("UPDATE users SET hui = ? WHERE hui = ? ",(n_hui,hui,))
-        # self.cur.execute("UPDATE users SET f_name = ? WHERE hui = ? ",(f_name,hui,))
-        # self.cur.execute("UPDATE users SET l_name = ? WHERE hui = ? ",(l_name,hui,))
-        # self.cur.execute("UPDATE users SET gender = ? WHERE hui = ? ",(gender,hui,))
-        # self.cur.execute("UPDATE users SET uid = ? WHERE hui = ? ",(uid,hui,))
-        # self.cur.execute("UPDATE users SET enrollment = ? WHERE hui = ? ",(enrollment,hui,))
-        # self.cur.execute("UPDATE users SET access = ? WHERE hui = ? ",(access,hui,))
-        # self.cur.execute("UPDATE users SET term = ? WHERE hui = ? ",(term,hui,))
-        # self.cur.execute("UPDATE users SET printed = ? WHERE hui = ? ",('0',hui,))
         self.conn.commit()
         return n_hui
 
@@ -261,8 +249,6 @@ class Database:
         self.conn.close()
 
 
-        
-        
 db = Database('userdata.db')
 
 db.fetch_all()
